@@ -1,6 +1,23 @@
 pipeline {
     agent any
     
+    parameters {
+        // String parameter
+        string(name: 'APP_VERSION', defaultValue: '1.0.0', description: 'Application version to build')
+        
+        // Choice parameter (dropdown)
+        choice(name: 'ENVIRONMENT', choices: ['development', 'staging', 'production'], description: 'Target environment')
+        
+        // Boolean parameter (checkbox)
+        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests during build')
+        
+        // Text parameter (multi-line)
+        text(name: 'BUILD_NOTES', defaultValue: '', description: 'Build notes or comments')
+        
+        // Password parameter (hidden)
+        // password(name: 'API_KEY', defaultValue: '', description: 'API Key for deployment')
+    }
+    
     environment {
         // Build information
         BUILD_NUMBER = "${env.BUILD_NUMBER}"
@@ -10,14 +27,9 @@ pipeline {
         // Workspace information
         WORKSPACE_PATH = "${env.WORKSPACE}"
         
-        // Custom environment variables (modify as needed)
-        NODE_ENV = 'production'
-        // APP_VERSION = '1.0.0'
-        // API_URL = 'https://api.example.com'
-        
-        // Java/Node/Python paths (uncomment if needed)
-        // JAVA_HOME = '/usr/lib/jvm/java-11-openjdk'
-        // PATH = "${env.PATH}:/usr/local/bin"
+        // Use parameters in environment
+        NODE_ENV = "${params.ENVIRONMENT}"
+        APP_VERSION = "${params.APP_VERSION}"
     }
     
     options {
@@ -34,6 +46,8 @@ pipeline {
                 echo "Build Number: ${BUILD_NUMBER}"
                 echo "Build Timestamp: ${BUILD_TIMESTAMP}"
                 echo "Workspace: ${WORKSPACE_PATH}"
+                echo "App Version: ${params.APP_VERSION}"
+                echo "Environment: ${params.ENVIRONMENT}"
                 checkout scm
             }
         }
@@ -43,14 +57,19 @@ pipeline {
                 echo 'Building the project...'
                 echo "Environment: ${NODE_ENV}"
                 echo "Build ID: ${BUILD_ID}"
+                echo "Building version: ${params.APP_VERSION}"
                 
             }
         }
         
         stage('Test') {
+            when {
+                expression { params.RUN_TESTS == true }
+            }
             steps {
                 echo 'Running tests...'
                 echo "Testing with Build Number: ${BUILD_NUMBER}"
+                echo "Build Notes: ${params.BUILD_NOTES}"
                 
             }
         }
@@ -59,6 +78,7 @@ pipeline {
             steps {
                 echo 'Archiving build artifacts...'
                 echo "Archiving from: ${WORKSPACE_PATH}"
+                echo "Version: ${params.APP_VERSION}"
                 
             }
         }
